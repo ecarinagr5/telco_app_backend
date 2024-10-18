@@ -1,51 +1,61 @@
-const express = require('express');
-const sql = require('mssql');
-require('dotenv').config();
-
+const express = require("express");
+const router = require("./routes/index");
+const bodyParser = require("body-parser");
+const errorHandler = require("./middleware/errorHandler");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const app = express();
-const PORT = 3000;
 
-// Middleware to parse JSON requests
-app.use(express.json());
+app.set("port", process.env.PORT || 8081);
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use("/api", router);
+app.use(errorHandler);
 
-// SQL Server Configuration
-const sqlConfig = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,
-  database: process.env.DB_DATABASE,
-  port: parseInt(process.env.DB_PORT, 10),
-  options: {
-    encrypt: process.env.DB_ENCRYPT === 'true', // Use encryption if required
-    trustServerCertificate: true,  // For local dev, disable SSL certificate checks
-  }
-};
+app.listen(process.env.PORT, () => {
+  console.log(`Server listening on PORT ${app.get("port")} `);
+});
 
-// Test the database connection
-sql.connect(sqlConfig)
-  .then(() => console.log('Connected to SQL Server'))
-  .catch((err) => console.error('Database connection failed:', err));
+app.post("/user/generateToken", (req, res) => {
+  // Validate User Here
+  // Then generate JWT Token
 
-// POST route to insert data into a table
-app.post('/insert', async (req, res) => {
-  const { name, age } = req.body;
+  let jwtSecretKey = process.env.JWT_SECRET_KEY;
+  let data = {
+    time: Date(),
+    userId: 12,
+  };
+  const token = jwt.sign(data, jwtSecretKey);
+
+  res.send(token);
+});
+
+app.get("/user/validateToken", (req, res) => {
+  // Tokens are generally passed in the header of the request
+  // Due to security reasons.
+
+  let tokenHeaderKey = process.env.TOKEN_HEADER_KEY;
+  let jwtSecretKey = process.env.JWT_SECRET_KEY;
 
   try {
-    const pool = await sql.connect(sqlConfig);
-    const result = await pool
-      .request()
-      .input('name', sql.NVarChar, name)
-      .input('age', sql.Int, age)
-      .query('INSERT INTO Users (name, age) VALUES (@name, @age)');
+    const token = req.header(tokenHeaderKey);
 
-    res.status(201).json({ message: 'User added successfully', result });
+    const verified = jwt.verify(token, jwtSecretKey);
+    if (verified) {
+      return res.send("Successfully Verified");
+    } else {
+      // Access Denied
+      return res.status(401).send(error);
+    }
   } catch (error) {
-    console.error('Insert error:', error);
-    res.status(500).json({ error: 'Failed to insert data' });
+    // Access Denied
+    return res.status(401).send(error);
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.get("/health", (req, res) => {
+  res.status(200).send("API Leads is Available");
 });
+
+// Export the Express API
+module.exports = app;

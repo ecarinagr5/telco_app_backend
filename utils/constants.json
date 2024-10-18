@@ -1,0 +1,21 @@
+{
+    "test": {
+      "userDB": "USR_CHIREY",
+      "passwordDB": "$vE97zCu",
+      "server": "azrarenabi.southcentralus.cloudapp.azure.com",
+      "database": "WEBSITE_CHIREY",
+      "table": "MASTER_TABLE2",
+      "port": 5023
+    },
+    "prod": {
+      "userDB": "USR_CHIREY",
+      "passwordDB": "$vE97zCu",
+      "server": "azrarenabi.southcentralus.cloudapp.azure.com",
+      "database": "WEBSITE_CHIREY",
+      "table": "MASTER_TABLE",
+      "port": 5023
+    },
+    "app": {
+      "port": 8080
+    }
+  }
